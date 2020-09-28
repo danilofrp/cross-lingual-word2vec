@@ -4,7 +4,7 @@ import time
 import numpy as np
 import pandas as pd
 
-from tqdm import tqdm
+from tqdm import tqdm, trange
 from pathlib import Path
 from functools import partial
 from itertools import chain
@@ -14,6 +14,8 @@ from translator import Translator
 data_path = Path("data") 
 paracrawl_pt_data_path = data_path / "parallel" / "paracrawl.en-pt" / "paracrawl.en-pt.pt"
 paracrawl_en_data_path = data_path / "parallel" / "paracrawl.en-pt" / "paracrawl.en-pt.en"
+paracrawl_crosslingual_en_pt_data_path = data_path / "parallel" / "paracrawl.en-pt" / "paracrawl.crosslingual.en-pt.sample"
+paracrawl_crosslingual_pt_en_data_path = data_path / "parallel" / "paracrawl.en-pt" / "paracrawl.crosslingual.pt-en.sample"
 en_pt_dict_path = data_path / "dicts" / "en-pt.json"
 pt_en_dict_path = data_path / "dicts" / "pt-en.json"
 n_lines = 2809381
@@ -25,17 +27,52 @@ remove_punct = partial(remove_punct_regex.sub, repl = "")
 translator = Translator(en_pt_dict_path, pt_en_dict_path)
 
 
+def preprocess_line(line):
+    return remove_punct(string = line.replace("\n", "").lower()).split()
+
+
+def read_corpus(files, shuffle_lines = False):
+    sentences = []
+    for file_path in files:
+        print(f"[ ] Reading file {file_path}")
+        with open(file_path, 'r', encoding = 'utf8') as f:
+            for line in tqdm(f, total = n_lines):
+                sentences.append((preprocess_line(line)))
+
+    if shuffle_lines:
+        np.random.shuffle(sentences)
+    return sentences
+
+
+def several_files_to_one():
+    paracrawl_crosslingual_all_data_path = data_path / "parallel" / "paracrawl.en-pt" / "paracrawl.crosslingual.en-pt.all"
+
+    with open(paracrawl_crosslingual_all_data_path, "w", encoding = "utf8") as f_out:
+        with open(paracrawl_en_data_path, "r", encoding = "utf8") as f1, open(paracrawl_pt_data_path, "r", encoding = "utf8") as f2, open(paracrawl_crosslingual_en_pt_data_path, "r", encoding = "utf8") as f3, open(paracrawl_crosslingual_pt_en_data_path, "r", encoding = "utf8") as f4:
+            for _ in trange(n_lines):
+                for f in [f1, f2, f3, f4]:
+                    line = preprocess_line(f.readline())
+                    f_out.write(line + "\n")
+
+
+def single_file_corpus(file):
+    with open(file, 'r', encoding = 'utf8') as f:
+        for line in tqdm(f, total = 4*n_lines):
+            yield preprocess_line(line)
+
+
 def get_file_unique_words(file_path):
     with open(file_path, "rb") as f:
-        unique_words = set(chain(*(remove_punct(string = line.decode("utf8").replace("\n", "").lower()).split() for line in tqdm(f, total = n_lines) if line)))
+        unique_words = set(chain(*(preprocess_line(line.decode("utf8")) for line in tqdm(f, total = n_lines) if line)))
     return unique_words
+
 
 def get_file_unique_word_counts(file_path, nlines = None):
     word_counts = dict()
     lines_read = 0
     with open(file_path, "rb") as f:
         for line in tqdm(f, total = n_lines):
-            for word in remove_punct(string = line.decode("utf8").replace("\n", "").lower()).split():
+            for word in preprocess_line(line.decode("utf8")):
                 if word in word_counts:
                     word_counts[word] += 1
                 else:
@@ -45,12 +82,14 @@ def get_file_unique_word_counts(file_path, nlines = None):
                 break
     return word_counts
 
+
 def glove2dict(glove_filename):
     with open(glove_filename, encoding="utf8") as f:
         reader = csv.reader(f, delimiter=' ', quoting=csv.QUOTE_NONE)
         embed = {line[0]: np.array(list(map(float, line[1:])))
                 for line in tqdm(reader, total = 400_000)}
     return embed
+
 
 def read_paracrawl_in_chunks(en_data_path = paracrawl_en_data_path, pt_data_path = paracrawl_pt_data_path, chunk_size = 100, offset = 0):
     outer_break = False

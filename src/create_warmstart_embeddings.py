@@ -74,6 +74,7 @@ def main():
     print(f"[ ] Writing file")
     warm_started_embeddings_path = data_path/"warm-started-embeddings"/f"glove.6B.en-pt.{embed_dim}d.txt"
     with open(warm_started_embeddings_path, "w", encoding="utf8") as f:
+        f.write(f"{len(warm_started_embeddings)} {embed_dim}\n")
         for key, value in tqdm(warm_started_embeddings.items(), total = len(warm_started_embeddings)):
             line = key + " " + str.join(" ", [str(v) for v in value]) + "\n"
             f.write(line)
