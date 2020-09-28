@@ -36,6 +36,7 @@ class ModelCheckpoint(CallbackAny2Vec):
                 filename = f.name
                 model.save(filename)
             
+        if (self.epoch + 1) % 2 == 0:
             model.wv.save_word2vec_format(str(results_path))
         
         self.epoch += 1
@@ -43,6 +44,8 @@ class ModelCheckpoint(CallbackAny2Vec):
 class LossLogger(CallbackAny2Vec):
     def __init__(self, train_log_path):
         self.epoch = 0
+        self.batch = 0
+        self.open_batches = []
         self.train_log_path = train_log_path
         self.epoch_start_time = time.time()
 
@@ -54,7 +57,24 @@ class LossLogger(CallbackAny2Vec):
         print(f"[ ] Word2Vec finished training in {time.time() - self.start_time} seconds")
         self.start_time = time.time()
 
+    def on_batch_begin(self, model):
+        print(f"[ ] Starting epoch {self.epoch}, batch {self.batch}...")
+        self.open_batches.append(self.batch)
+        self.batch += 1
+
+    def on_batch_end(self, model):
+        completed_batch = "?"
+        try:
+            completed_batch = self.open_batches.pop(0)
+        except:
+            pass
+
+        print(f'[ ] Batch {completed_batch} of epoch {self.epoch} finished')
+
     def on_epoch_begin(self, model):
+        print(f"[ ] Starting epoch {self.epoch}...")
+        self.batch = 0
+        self.open_batches = []
         self.epoch_start_time = time.time()
 
     def on_epoch_end(self, model):
