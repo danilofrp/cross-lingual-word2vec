@@ -8,7 +8,7 @@ from pathlib import Path
 
 import utils
 
-embed_dim = 50
+embed_dim = 300
 
 data_path = Path("data")
 pretrained_embeddings_path = data_path/"pretrained-embeddings"/"glove.6B"/f"glove.6B.{embed_dim}d.txt"

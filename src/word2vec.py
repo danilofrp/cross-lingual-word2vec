@@ -8,8 +8,8 @@ from gensim.models.callbacks import CallbackAny2Vec
 import utils
 
 
-embed_dim = 50
-epochs = 1_000
+embed_dim = 300
+epochs = 50
 
 n_lines = 2809381
 data_path = Path("data")
@@ -29,7 +29,7 @@ class ModelCheckpoint(CallbackAny2Vec):
         self.checkpoints_path = checkpoints_path
 
     def on_epoch_end(self, model):
-        if (self.epoch + 1) % 10 == 0:
+        if (self.epoch + 1) % 2 == 0:
             print("[ ] Saving checkpoint...")
             filepath = self.checkpoints_path/f"word2vec-warmstart-{model.trainables.layer1_size}d-epoch{self.epoch + 1}.model"
             with open(filepath, "w") as f:
