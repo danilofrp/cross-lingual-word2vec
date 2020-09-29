@@ -40,14 +40,14 @@ def main():
     pretrained_embeddings = glove2dict(pretrained_embeddings_path)
     print(f"[ ] Finished loading embeddings ({embed_dim}d)")
 
-    warm_started_embeddings = dict()
+    warm_started_embeddings = pretrained_embeddings
     
     matches = 0
     covered_occourences = 0
     print("[ ] Building warm start for EN words")
     for word, count in tqdm(en_word_counts.items(), total = len(en_word_counts)):
         if word in pretrained_embeddings:
-            warm_started_embeddings[word] = pretrained_embeddings[word]
+            # warm_started_embeddings[word] = pretrained_embeddings[word]
             matches += 1
             covered_occourences += count
         else:
