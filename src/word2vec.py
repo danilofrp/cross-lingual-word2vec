@@ -37,7 +37,8 @@ class ModelCheckpoint(CallbackAny2Vec):
                 model.save(filename)
             
         if (self.epoch + 1) % 2 == 0:
-            model.wv.save_word2vec_format(str(results_path))
+            filepath = data_path/"results"/f"word2vec_warmstarted_trained_embeddings_{embed_dim}d_epoch{self.epoch + 1}.txt"
+            model.wv.save_word2vec_format(str(filepath))
         
         self.epoch += 1
 
